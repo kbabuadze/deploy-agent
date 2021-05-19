@@ -8,6 +8,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 )
@@ -15,9 +16,11 @@ import (
 type ContainerProps struct {
 	Image    string
 	Port     string   // Container Port
+	Name     string   // Container Basename
 	HostIP   string   // IP to bind port on
 	HostPort string   // Host Port
 	Command  []string // Command that runs on container start
+	Label    map[string]string
 }
 
 func DeployContainer(props ContainerProps) (container.ContainerCreateCreatedBody, error) {
@@ -52,12 +55,13 @@ func DeployContainer(props ContainerProps) (container.ContainerCreateCreatedBody
 
 	// Container config
 	containerConfig := &container.Config{
-		Image: props.Image,
-		Cmd:   props.Command,
+		Image:  props.Image,
+		Cmd:    props.Command,
+		Labels: props.Label,
 	}
 
 	// Create Container
-	resp, err := cli.ContainerCreate(ctx, containerConfig, hostConfig, nil, nil, "")
+	resp, err := cli.ContainerCreate(ctx, containerConfig, hostConfig, nil, nil, props.Name)
 	if err != nil {
 		return containerBody, err
 	}
@@ -83,4 +87,20 @@ func StopContainer(id string, timeout time.Duration) error {
 	}
 
 	return nil
+}
+
+func GetContainerStatus() ([]types.Container, error) {
+	ctx := context.Background()
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		panic(err)
+	}
+
+	filter := filters.NewArgs()
+
+	filter.Add("label", "by=deploy-agent")
+
+	containers, err := cli.ContainerList(ctx, types.ContainerListOptions{Filters: filter})
+
+	return containers, err
 }
