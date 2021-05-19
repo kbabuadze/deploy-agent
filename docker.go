@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"log"
 	"os"
 	"time"
 
@@ -74,6 +76,46 @@ func DeployContainer(props ContainerProps) (container.ContainerCreateCreatedBody
 	return resp, nil
 }
 
+func UpdateContainers(name string, image string, updateSlice []types.Container) error {
+
+	for _, container := range updateSlice {
+
+		fmt.Println("Hit1")
+		if err := StopContainer(container.ID, 60*time.Second); err != nil {
+			log.Println(err.Error())
+			return err
+		}
+		fmt.Println("Hit2")
+
+		if err := RemoveContainer(container.ID); err != nil {
+			log.Println(err.Error())
+			return err
+		}
+		fmt.Println("Hit3")
+
+		props := ContainerProps{
+			Image:    image,
+			Name:     container.Names[0],
+			Port:     fmt.Sprint(container.Ports[0].PrivatePort) + "/tcp",
+			HostIP:   fmt.Sprint(container.Ports[0].IP),
+			HostPort: fmt.Sprint(container.Ports[0].PublicPort) + "/tcp",
+			Command:  []string{"nginx", "-g", "daemon off;"},
+			Label:    map[string]string{"by": "deploy-agent"},
+		}
+		fmt.Println("Hit4")
+
+		_, err := DeployContainer(props)
+
+		if err != nil {
+			log.Println(err.Error())
+			return err
+		}
+
+	}
+
+	return nil
+}
+
 func StopContainer(id string, timeout time.Duration) error {
 
 	ctx := context.Background()
@@ -89,7 +131,22 @@ func StopContainer(id string, timeout time.Duration) error {
 	return nil
 }
 
-func GetContainerStatus() ([]types.Container, error) {
+func RemoveContainer(id string) error {
+	ctx := context.Background()
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		return err
+	}
+
+	if err := cli.ContainerRemove(ctx, id, types.ContainerRemoveOptions{}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Get status of all containers with label "by=deploy-agent"
+func GetContainers() ([]types.Container, error) {
 	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {

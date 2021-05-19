@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/gin-gonic/gin"
 )
@@ -61,6 +62,11 @@ func handleStop(c *gin.Context) {
 					"status": "failed",
 				})
 			}
+			if err := RemoveContainer(container.ID); err != nil {
+				c.JSON(http.StatusOK, gin.H{
+					"status": "failed",
+				})
+			}
 		}
 	}()
 
@@ -69,11 +75,49 @@ func handleStop(c *gin.Context) {
 	})
 }
 
-// Lists
+type UpdateContainer struct {
+	Name  string `json:"name"`
+	Image string `json:"image"`
+}
+
+func handleUpdate(c *gin.Context) {
+
+	containers, err := GetContainers()
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+
+	updateParams := UpdateContainer{}
+
+	if err := c.BindJSON(&updateParams); err != nil {
+		if err != nil {
+			log.Println(err.Error())
+			return
+		}
+
+	}
+
+	updateSlice := make([]types.Container, 0)
+
+	for _, container := range containers {
+		if true {
+			fmt.Printf(container.Names[0])
+			updateSlice = append(updateSlice, container)
+		}
+	}
+
+	go func() {
+		_ = UpdateContainers(updateParams.Name, updateParams.Image, updateSlice)
+	}()
+
+}
+
+// List Continers
 func handleGet(c *gin.Context) {
 
 	result := []gin.H{}
-	containers, err := GetContainerStatus()
+	containers, err := GetContainers()
 	if err != nil {
 		log.Println(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -87,6 +131,7 @@ func handleGet(c *gin.Context) {
 			"image":  container.Image,
 			"name":   container.Names,
 			"status": container.Status,
+			"ports":  container.Ports,
 		})
 	}
 
@@ -103,7 +148,7 @@ func handleStatus(c *gin.Context) {
 
 	stat := make([]status, 0)
 
-	containers, err := GetContainerStatus()
+	containers, err := GetContainers()
 	if err != nil {
 		log.Println(err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
