@@ -19,14 +19,10 @@ var containers = map[string]container.ContainerCreateCreatedBody{}
 
 func main() {
 
-	// Bootstrap container
-
-	// Receive command though http
-
+	// Initialize gin
 	r := gin.Default()
 
-	// Create unmarshals recieved JSON and gives it to go routine
-	// further info can be obtained through /status
+	// Setup Routes
 	r.POST("/create", handleCreate)
 
 	r.GET("/stop", handleStop)
@@ -37,17 +33,6 @@ func main() {
 
 	r.POST("/update", handleUpdate)
 
-	// listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
-
-	// Download container
-
-	// Tag Container
-
-	// Run container
-
-	// Monitor Container
-
-	// Send email when container is up and if it fails
-
+	// Start server
 	r.Run("0.0.0.0:8008")
 }

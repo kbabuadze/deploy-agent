@@ -25,9 +25,9 @@ type ContainerProps struct {
 	Label    map[string]string
 }
 
-func DeployContainer(props ContainerProps) (container.ContainerCreateCreatedBody, error) {
+var ctx = context.Background()
 
-	ctx := context.Background()
+func DeployContainer(props ContainerProps) (container.ContainerCreateCreatedBody, error) {
 
 	containerBody := container.ContainerCreateCreatedBody{}
 
@@ -115,7 +115,6 @@ func UpdateContainers(name string, image string, updateSlice []types.Container) 
 
 func StopContainer(id string, timeout time.Duration) error {
 
-	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		fmt.Println(err.Error())
@@ -130,7 +129,6 @@ func StopContainer(id string, timeout time.Duration) error {
 }
 
 func RemoveContainer(id string) error {
-	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		return err
@@ -145,7 +143,6 @@ func RemoveContainer(id string) error {
 
 // Get status of all containers with label "by=deploy-agent"
 func GetContainers() ([]types.Container, error) {
-	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		panic(err)
