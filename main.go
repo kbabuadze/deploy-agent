@@ -15,7 +15,7 @@ type ContainerConfig struct {
 	Command       []string `json:"command"`
 }
 
-var containers []container.ContainerCreateCreatedBody
+var containers = map[string]container.ContainerCreateCreatedBody{}
 
 func main() {
 

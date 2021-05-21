@@ -41,12 +41,13 @@ func handleCreate(c *gin.Context) {
 				return
 			}
 
-			containers = append(containers, containerBody)
+			containers[containerBody.ID] = containerBody
 		}
 
 	}()
 
-	c.JSON(http.StatusOK, gin.H{"status": "recieved create signal, please check /status for more details"})
+	fmt.Printf("%v", containerConfig)
+	c.JSON(http.StatusOK, containerConfig)
 
 }
 
@@ -54,19 +55,20 @@ func handleCreate(c *gin.Context) {
 // Progress can be obtained though /status endpoint
 func handleStop(c *gin.Context) {
 
+	fmt.Println(containers)
 	go func() {
 		for _, container := range containers {
 			err := StopContainer(container.ID, 60*time.Second)
 			if err != nil {
-				c.JSON(http.StatusOK, gin.H{
-					"status": "failed",
-				})
+				fmt.Println(err.Error())
+				return
 			}
 			if err := RemoveContainer(container.ID); err != nil {
-				c.JSON(http.StatusOK, gin.H{
-					"status": "failed",
-				})
+				fmt.Println(err.Error())
+				return
 			}
+
+			delete(containers, container.ID)
 		}
 	}()
 
@@ -110,6 +112,8 @@ func handleUpdate(c *gin.Context) {
 	go func() {
 		_ = UpdateContainers(updateParams.Name, updateParams.Image, updateSlice)
 	}()
+
+	c.JSON(http.StatusOK, updateParams)
 
 }
 

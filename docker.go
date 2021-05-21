@@ -80,18 +80,16 @@ func UpdateContainers(name string, image string, updateSlice []types.Container) 
 
 	for _, container := range updateSlice {
 
-		fmt.Println("Hit1")
 		if err := StopContainer(container.ID, 60*time.Second); err != nil {
 			log.Println(err.Error())
 			return err
 		}
-		fmt.Println("Hit2")
 
 		if err := RemoveContainer(container.ID); err != nil {
 			log.Println(err.Error())
 			return err
 		}
-		fmt.Println("Hit3")
+		delete(containers, container.ID)
 
 		props := ContainerProps{
 			Image:    image,
@@ -102,10 +100,9 @@ func UpdateContainers(name string, image string, updateSlice []types.Container) 
 			Command:  []string{"nginx", "-g", "daemon off;"},
 			Label:    map[string]string{"by": "deploy-agent"},
 		}
-		fmt.Println("Hit4")
 
-		_, err := DeployContainer(props)
-
+		newContainer, err := DeployContainer(props)
+		containers[newContainer.ID] = newContainer
 		if err != nil {
 			log.Println(err.Error())
 			return err
@@ -121,7 +118,8 @@ func StopContainer(id string, timeout time.Duration) error {
 	ctx := context.Background()
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
+		return err
 	}
 
 	if err := cli.ContainerStop(ctx, id, &timeout); err != nil {
