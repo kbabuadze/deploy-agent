@@ -6,13 +6,22 @@ import (
 )
 
 type ContainerConfig struct {
-	Image         string   `json:"image"`
-	Name          string   `json:"name"`
-	ContainerPort string   `json:"containerPort"`
-	HostIP        string   `json:"hostIP"`
-	HostPortFirst int      `json:"hostPortFirst"`
-	Replicas      int      `json:"replicas"`
-	Command       []string `json:"command"`
+	Image string `json:"image"`
+	Name  string `json:"name"`
+
+	ContainerNet struct {
+		Port  string `json:"port"`
+		Proto string `json:"proto"`
+	} `json:"containerNet"`
+
+	HostNet struct {
+		IP        string `json:"ip"`
+		PortFirst int    `json:"portFirst"`
+		Proto     string `json:"proto"`
+	} `json:"hostNet"`
+
+	Replicas int      `json:"replicas"`
+	Command  []string `json:"command"`
 }
 
 var containers = map[string]container.ContainerCreateCreatedBody{}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/docker/docker/api/types"
@@ -22,16 +23,15 @@ func handleCreate(c *gin.Context) {
 	if err := c.BindJSON(&containerConfig); err != nil {
 		panic(err)
 	}
-
 	go func() {
 		for i := 0; i < containerConfig.Replicas; i++ {
 
 			containerProps := ContainerProps{
 				Image:    containerConfig.Image,
-				Name:     containerConfig.Name + "-" + fmt.Sprint(i+1),
-				Port:     containerConfig.ContainerPort + "/tcp",
-				HostIP:   containerConfig.HostIP,
-				HostPort: fmt.Sprint(containerConfig.HostPortFirst+i) + "/tcp",
+				Name:     containerConfig.Name + "-" + strconv.Itoa(i+1),
+				Port:     containerConfig.ContainerNet.Port + "/" + containerConfig.ContainerNet.Proto,
+				HostIP:   containerConfig.HostNet.IP,
+				HostPort: strconv.Itoa(containerConfig.HostNet.PortFirst+i) + "/" + containerConfig.HostNet.Proto,
 				Command:  containerConfig.Command,
 				Label:    map[string]string{"by": "deploy-agent"},
 			}
@@ -43,9 +43,7 @@ func handleCreate(c *gin.Context) {
 
 			containers[containerBody.ID] = containerBody
 		}
-
 	}()
-
 	fmt.Printf("%v", containerConfig)
 	c.JSON(http.StatusOK, containerConfig)
 
