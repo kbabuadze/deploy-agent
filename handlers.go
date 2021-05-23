@@ -128,27 +128,7 @@ func handleStopDeploy(db *bolt.DB) gin.HandlerFunc {
 			}
 			delete(deployment.Running, k)
 
-			db.Update(func(tx *bolt.Tx) error {
-				b, err := tx.CreateBucketIfNotExists([]byte("Deployments"))
-
-				if err != nil {
-					return fmt.Errorf("create bucket: %s", err)
-				}
-
-				encoded, err := json.Marshal(deployment)
-				if err != nil {
-					return err
-				}
-
-				err = b.Put([]byte(deployment.Name), encoded)
-
-				if err != nil {
-					return fmt.Errorf("create bucket: %s", err)
-				}
-
-				return nil
-
-			})
+			deployment.save(db)
 
 		}
 
