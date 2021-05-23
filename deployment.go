@@ -72,3 +72,11 @@ func (d *Deployment) get(db *bolt.DB, name string) error {
 		return nil
 	})
 }
+
+func (d *Deployment) delete(db *bolt.DB) error {
+	return db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("Deployments"))
+		b.Delete([]byte(d.Name))
+		return nil
+	})
+}

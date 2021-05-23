@@ -154,12 +154,7 @@ func handleStopDeploy(db *bolt.DB) gin.HandlerFunc {
 
 		if len(deployment.Running) == 0 {
 			fmt.Println("Deleting Deployment")
-			db.Update(func(t *bolt.Tx) error {
-				b := t.Bucket([]byte("Deployments"))
-				b.Delete([]byte(deployment.Name))
-				return nil
-			})
-
+			deployment.delete(db)
 		}
 
 		c.JSON(http.StatusOK, stopReq)
