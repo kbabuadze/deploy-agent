@@ -58,10 +58,10 @@ func (d *Deployment) save(db *bolt.DB) error {
 	})
 }
 
+// Get deployment from boltDB
 func (d *Deployment) get(db *bolt.DB, name string) error {
 
 	return db.View(func(tx *bolt.Tx) error {
-		// Assume bucket exists and has keys
 		b := tx.Bucket([]byte("Deployments"))
 
 		err := json.Unmarshal(b.Get([]byte(name)), d)
@@ -69,14 +69,18 @@ func (d *Deployment) get(db *bolt.DB, name string) error {
 		if err != nil {
 			return err
 		}
+
 		return nil
 	})
 }
 
+// Delete deployment from boltDB
 func (d *Deployment) delete(db *bolt.DB) error {
 	return db.Update(func(tx *bolt.Tx) error {
+
 		b := tx.Bucket([]byte("Deployments"))
 		b.Delete([]byte(d.Name))
+
 		return nil
 	})
 }

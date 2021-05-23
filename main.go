@@ -17,12 +17,14 @@ func main() {
 	// Initialize gin
 	r := gin.Default()
 
+	// Open BoltDB
 	db, err := bolt.Open("my.db", 0600, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
+	// Initialize Bucket if it does not exist
 	db.Update(func(tx *bolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists([]byte("Deployments"))
 
