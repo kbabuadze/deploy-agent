@@ -46,14 +46,12 @@ func handleCreate(db *bolt.DB) gin.HandlerFunc {
 	}
 }
 
-type StopRequest struct {
-	Name string `json:"name"`
-}
-
 func handleStopDeploy(db *bolt.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		stopReq := StopRequest{}
+		stopReq := struct {
+			Name string `json:"name"`
+		}{}
 
 		if err := c.BindJSON(&stopReq); err != nil {
 			panic(err)
@@ -90,11 +88,6 @@ func handleReset(db *bolt.DB) gin.HandlerFunc {
 	}
 }
 
-type UpdateContainer struct {
-	Name  string `json:"name"`
-	Image string `json:"image"`
-}
-
 func handleUpdate(c *gin.Context) {
 
 	containers, err := GetContainers()
@@ -103,7 +96,10 @@ func handleUpdate(c *gin.Context) {
 		return
 	}
 
-	updateParams := UpdateContainer{}
+	updateParams := struct {
+		Name  string `json:"name"`
+		Image string `json:"image"`
+	}{}
 
 	if err := c.BindJSON(&updateParams); err != nil {
 		if err != nil {
