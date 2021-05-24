@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	bolt "go.etcd.io/bbolt"
@@ -22,8 +21,6 @@ func handleCreate(db *bolt.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		var containerConfig ContainerConfig
-		var containerBody container.ContainerCreateCreatedBody
-		var err error
 		var deployment = Deployment{}
 
 		if err := c.BindJSON(&containerConfig); err != nil {
@@ -31,8 +28,6 @@ func handleCreate(db *bolt.DB) gin.HandlerFunc {
 		}
 
 		deployment.get(db, containerConfig.Name)
-
-		fmt.Printf("deployment --- %v", deployment)
 
 		if deployment.Name != "" {
 			fmt.Println("deployment already exists")
@@ -47,31 +42,7 @@ func handleCreate(db *bolt.DB) gin.HandlerFunc {
 
 		deployment.save(db)
 
-		go func() {
-			for i := 0; i < containerConfig.Replicas; i++ {
-
-				containerProps := ContainerProps{
-					Image:    containerConfig.Image,
-					Name:     containerConfig.Name + "-" + strconv.Itoa(i+1),
-					Port:     containerConfig.ContainerNet.Port + "/" + containerConfig.ContainerNet.Proto,
-					HostIP:   containerConfig.HostNet.IP,
-					HostPort: strconv.Itoa(containerConfig.HostNet.PortFirst+i) + "/" + containerConfig.HostNet.Proto,
-					Command:  containerConfig.Command,
-					Label:    map[string]string{"by": "deploy-agent"},
-				}
-
-				if containerBody, err = DeployContainer(containerProps); err != nil {
-					log.Println(err.Error())
-					return
-				}
-
-				deployment.Running[containerBody.ID] = containerBody
-
-				deployment.save(db)
-
-				containers[containerBody.ID] = containerBody
-			}
-		}()
+		deployment.run(db)
 
 		c.JSON(http.StatusOK, containerConfig)
 	}

@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"strconv"
 
 	"github.com/docker/docker/api/types/container"
 	bolt "go.etcd.io/bbolt"
@@ -83,4 +85,34 @@ func (d *Deployment) delete(db *bolt.DB) error {
 
 		return nil
 	})
+}
+
+func (d *Deployment) run(db *bolt.DB) {
+
+	for i := 0; i < d.Config.Replicas; i++ {
+
+		// prepare container config
+		containerProps := ContainerProps{
+			Image:    d.Config.Image,
+			Name:     d.Config.Name + "-" + strconv.Itoa(i+1),
+			Port:     d.Config.ContainerNet.Port + "/" + d.Config.ContainerNet.Proto,
+			HostIP:   d.Config.HostNet.IP,
+			HostPort: strconv.Itoa(d.Config.HostNet.PortFirst+i) + "/" + d.Config.HostNet.Proto,
+			Command:  d.Config.Command,
+			Label:    map[string]string{"by": "deploy-agent"},
+		}
+
+		// run
+		containerBody, err := DeployContainer(containerProps)
+		if err != nil {
+			log.Println(err.Error())
+			return
+		}
+
+		d.Running[containerBody.ID] = containerBody
+
+		// save
+		d.save(db)
+	}
+
 }
