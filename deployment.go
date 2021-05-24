@@ -36,7 +36,7 @@ type Deployment struct {
 	Running map[string]container.ContainerCreateCreatedBody `json:"running"`
 }
 
-// Save deployemnt to bolt
+// Saves Deployment to BoltDB
 func (d *Deployment) save(db *bolt.DB) error {
 	return db.Update(func(tx *bolt.Tx) error {
 		b, err := tx.CreateBucketIfNotExists([]byte("Deployments"))
@@ -61,7 +61,7 @@ func (d *Deployment) save(db *bolt.DB) error {
 	})
 }
 
-// Get deployment from boltDB
+// Gets deployment from BoltDB
 func (d *Deployment) get(db *bolt.DB, name string) error {
 
 	return db.View(func(tx *bolt.Tx) error {
@@ -77,7 +77,7 @@ func (d *Deployment) get(db *bolt.DB, name string) error {
 	})
 }
 
-// Delete deployment from boltDB
+// Deletes deployment from BoltDB
 func (d *Deployment) delete(db *bolt.DB) error {
 	return db.Update(func(tx *bolt.Tx) error {
 
@@ -88,6 +88,8 @@ func (d *Deployment) delete(db *bolt.DB) error {
 	})
 }
 
+// Creates Deployment in BoltDB
+// Creates and Runs containers
 func (d *Deployment) run(db *bolt.DB) {
 
 	for i := 0; i < d.Config.Replicas; i++ {
@@ -118,6 +120,8 @@ func (d *Deployment) run(db *bolt.DB) {
 
 }
 
+// Stops and Deletes containers
+// Removes Deployment from BoltDB
 func (d *Deployment) stop(db *bolt.DB) {
 	for k := range d.Running {
 		fmt.Println("Stopping " + k)
