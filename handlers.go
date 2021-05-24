@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 
 	bolt "go.etcd.io/bbolt"
 
@@ -89,31 +88,6 @@ func handleReset(db *bolt.DB) gin.HandlerFunc {
 			"status": "reset",
 		})
 	}
-}
-
-// Recieves stop signal, passes action to goroutine and immediately returns a result.
-// Progress can be obtained though /status endpoint
-func handleStop(c *gin.Context) {
-
-	go func() {
-		for _, container := range containers {
-			err := StopContainer(container.ID, 60*time.Second)
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-			if err := RemoveContainer(container.ID); err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-
-			delete(containers, container.ID)
-		}
-	}()
-
-	c.JSON(http.StatusOK, gin.H{
-		"status": "received stop signal, please check /status for more details",
-	})
 }
 
 type UpdateContainer struct {

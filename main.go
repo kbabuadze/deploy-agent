@@ -37,8 +37,6 @@ func main() {
 	// Setup Routes
 	r.POST("/create", handleCreate(db))
 
-	r.GET("/stop", handleStop)
-
 	r.POST("/stop", handleStopDeploy(db))
 
 	r.GET("/get", handleGet)
