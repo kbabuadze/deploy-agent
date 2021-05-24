@@ -86,27 +86,7 @@ func handleStopDeploy(db *bolt.DB) gin.HandlerFunc {
 			return
 		}
 
-		for k := range deployment.Running {
-			fmt.Println("Stopping" + k)
-			err = StopContainer(k, 60*time.Second)
-			if err != nil {
-				fmt.Println(err.Error())
-			}
-
-			err = RemoveContainer(k)
-			if err != nil {
-				fmt.Println(err.Error())
-			}
-			delete(deployment.Running, k)
-
-			deployment.save(db)
-
-		}
-
-		if len(deployment.Running) == 0 {
-			fmt.Println("Deleting Deployment")
-			deployment.delete(db)
-		}
+		deployment.stop(db)
 
 		c.JSON(http.StatusOK, stopReq)
 	}

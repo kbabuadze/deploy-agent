@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"time"
 
 	"github.com/docker/docker/api/types/container"
 	bolt "go.etcd.io/bbolt"
@@ -115,4 +116,28 @@ func (d *Deployment) run(db *bolt.DB) {
 		d.save(db)
 	}
 
+}
+
+func (d *Deployment) stop(db *bolt.DB) {
+	for k := range d.Running {
+		fmt.Println("Stopping " + k)
+		err := StopContainer(k, 60*time.Second)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+
+		err = RemoveContainer(k)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		delete(d.Running, k)
+
+		d.save(db)
+
+	}
+
+	if len(d.Running) == 0 {
+		fmt.Println("Deleting Deployments")
+		d.delete(db)
+	}
 }
