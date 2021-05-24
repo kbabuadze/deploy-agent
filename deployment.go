@@ -38,6 +38,7 @@ type Deployment struct {
 
 // Saves Deployment to BoltDB
 func (d *Deployment) save(db *bolt.DB) error {
+
 	return db.Update(func(tx *bolt.Tx) error {
 		b, err := tx.CreateBucketIfNotExists([]byte("Deployments"))
 
@@ -141,7 +142,13 @@ func (d *Deployment) stop(db *bolt.DB) {
 	}
 
 	if len(d.Running) == 0 {
-		fmt.Println("Deleting Deployments")
-		d.delete(db)
+		fmt.Println("Removing Deployment")
+		err := d.delete(db)
+
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		fmt.Println("Deployment Removed")
 	}
 }
