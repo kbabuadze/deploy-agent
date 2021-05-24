@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -61,34 +60,19 @@ func handleStopDeploy(db *bolt.DB) gin.HandlerFunc {
 			panic(err)
 		}
 
-		name := []byte("")
-		db.View(func(tx *bolt.Tx) error {
-			// Assume bucket exists and has keys
-			b := tx.Bucket([]byte("Deployments"))
-
-			name = b.Get([]byte(stopReq.Name))
-
-			return nil
-		})
-
-		if name == nil {
-			c.JSON(http.StatusNotFound, name)
-			fmt.Printf("No such deployment")
-			return
-		}
-
 		deployment := Deployment{}
 
-		err := json.Unmarshal([]byte(name), &deployment)
+		deployment.get(db, stopReq.Name)
 
-		if err != nil {
-			fmt.Println(err.Error())
+		if deployment.Name == "" {
+			c.JSON(http.StatusNotFound, stopReq.Name)
+			fmt.Printf("No such deployment")
 			return
 		}
 
 		deployment.stop(db)
 
-		c.JSON(http.StatusOK, stopReq)
+		c.JSON(http.StatusOK, deployment)
 	}
 }
 
