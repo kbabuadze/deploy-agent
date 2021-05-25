@@ -3,16 +3,27 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
 	bolt "go.etcd.io/bbolt"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 var containers = map[string]container.ContainerCreateCreatedBody{}
 
 func main() {
+
+	//Setup .env
+	err := godotenv.Load(".env")
+
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+
+	listen_on := os.Getenv("LISTEN_ON")
 
 	// Initialize gin
 	r := gin.Default()
@@ -48,5 +59,5 @@ func main() {
 	r.POST("/update", handleUpdate)
 
 	// Start server
-	r.Run("0.0.0.0:8008")
+	r.Run(listen_on)
 }
