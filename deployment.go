@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	bolt "go.etcd.io/bbolt"
 )
@@ -76,6 +77,62 @@ func (d *Deployment) get(db *bolt.DB, name string) error {
 
 		return nil
 	})
+}
+
+// Get conteiners managed by the deployment
+func (d *Deployment) getContainers() ([]types.Container, error) {
+
+	containers := make([]types.Container, 0)
+
+	for id := range d.Running {
+		container, err := GetContainer(id)
+		if err != nil {
+			return containers, err
+		}
+		containers = append(containers, container)
+	}
+
+	return containers, nil
+}
+
+func (d *Deployment) update(image string, db *bolt.DB) error {
+	updateSlice, err := d.getContainers()
+
+	if err != nil {
+		return err
+
+	}
+
+	for _, container := range updateSlice {
+		StopContainer(container.ID, 60*time.Second)
+		RemoveContainer(container.ID)
+
+		// prepare container config
+		containerProps := ContainerProps{
+			Image:    image,
+			Name:     container.Names[0],
+			Port:     fmt.Sprint(container.Ports[0].PrivatePort) + "/" + d.Config.ContainerNet.Proto,
+			HostIP:   container.Ports[0].IP,
+			HostPort: strconv.Itoa(int(container.Ports[0].PublicPort)) + "/" + d.Config.HostNet.Proto,
+			Command:  d.Config.Command,
+			Label:    map[string]string{"by": "deploy-agent"},
+		}
+
+		createBody, err := DeployContainer(containerProps)
+
+		if err != nil {
+			return err
+		}
+
+		delete(d.Running, container.ID)
+
+		d.Running[createBody.ID] = createBody
+
+		d.save(db)
+
+	}
+
+	return nil
 }
 
 // Deletes deployment from BoltDB

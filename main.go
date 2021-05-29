@@ -7,12 +7,11 @@ import (
 
 	bolt "go.etcd.io/bbolt"
 
-	"github.com/docker/docker/api/types/container"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 )
 
-var containers = map[string]container.ContainerCreateCreatedBody{}
+// var containers = map[string]container.ContainerCreateCreatedBody{}
 
 func main() {
 
@@ -56,7 +55,7 @@ func main() {
 
 	r.GET("/status", handleStatus)
 
-	r.POST("/update", handleUpdate)
+	r.POST("/update", handleUpdate(db))
 
 	// Start server
 	r.Run(listen_on)

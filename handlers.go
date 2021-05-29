@@ -7,7 +7,6 @@ import (
 
 	bolt "go.etcd.io/bbolt"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/gin-gonic/gin"
 )
@@ -88,45 +87,41 @@ func handleReset(db *bolt.DB) gin.HandlerFunc {
 	}
 }
 
-func handleUpdate(c *gin.Context) {
+func handleUpdate(db *bolt.DB) gin.HandlerFunc {
 
-	containers, err := GetContainers()
-	if err != nil {
-		log.Println(err.Error())
-		return
-	}
+	return func(c *gin.Context) {
+		updateParams := struct {
+			Name  string `json:"name"`
+			Image string `json:"image"`
+		}{}
 
-	updateParams := struct {
-		Name  string `json:"name"`
-		Image string `json:"image"`
-	}{}
+		if err := c.BindJSON(&updateParams); err != nil {
+			if err != nil {
+				log.Println(err.Error())
+				return
+			}
 
-	if err := c.BindJSON(&updateParams); err != nil {
+		}
+
+		deployment := Deployment{}
+
+		deployment.get(db, updateParams.Name)
+
+		if deployment.Name == "" {
+			fmt.Println("Could not find Deployment")
+		}
+
+		err := deployment.update(updateParams.Image, db)
 		if err != nil {
-			log.Println(err.Error())
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"status": "Failed to update, please check logs",
+			})
 			return
 		}
 
 	}
-
-	updateSlice := make([]types.Container, 0)
-
-	for _, container := range containers {
-		if true {
-			fmt.Printf(container.Names[0])
-			updateSlice = append(updateSlice, container)
-		}
-	}
-
-	go func() {
-		_ = UpdateContainers(updateParams.Name, updateParams.Image, updateSlice)
-	}()
-
-	c.JSON(http.StatusOK, updateParams)
-
 }
 
-// List Continers
 func handleGet(c *gin.Context) {
 
 	result := []gin.H{}
