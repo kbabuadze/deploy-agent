@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strconv"
 	"time"
 
@@ -44,7 +43,7 @@ func (d *Deployment) save(db *bolt.DB) error {
 		b, err := tx.CreateBucketIfNotExists([]byte("Deployments"))
 
 		if err != nil {
-			return fmt.Errorf("create bucket: %s", err)
+			return err
 		}
 
 		encoded, err := json.Marshal(d)
@@ -128,7 +127,9 @@ func (d *Deployment) update(image string, db *bolt.DB) error {
 
 		d.Running[createBody.ID] = createBody
 
-		d.save(db)
+		if err := d.save(db); err != nil {
+			return err
+		}
 
 	}
 
@@ -140,7 +141,9 @@ func (d *Deployment) delete(db *bolt.DB) error {
 	return db.Update(func(tx *bolt.Tx) error {
 
 		b := tx.Bucket([]byte("Deployments"))
-		b.Delete([]byte(d.Name))
+		if err := b.Delete([]byte(d.Name)); err != nil {
+			return err
+		}
 
 		return nil
 	})
@@ -148,7 +151,7 @@ func (d *Deployment) delete(db *bolt.DB) error {
 
 // Creates Deployment in BoltDB
 // Creates and Runs containers
-func (d *Deployment) run(db *bolt.DB) {
+func (d *Deployment) run(db *bolt.DB) error {
 
 	for i := 0; i < d.Config.Replicas; i++ {
 
@@ -166,46 +169,48 @@ func (d *Deployment) run(db *bolt.DB) {
 		// run
 		containerBody, err := DeployContainer(containerProps)
 		if err != nil {
-			log.Println(err.Error())
-			return
+			return err
 		}
 
 		d.Running[containerBody.ID] = containerBody
 
 		// save
-		d.save(db)
+		if err := d.save(db); err != nil {
+			return err
+		}
 	}
+
+	return nil
 
 }
 
 // Stops and Deletes containers
 // Removes Deployment from BoltDB
-func (d *Deployment) stop(db *bolt.DB) {
+func (d *Deployment) stop(db *bolt.DB) error {
 	for k := range d.Running {
-		fmt.Println("Stopping " + k)
 		err := StopContainer(k, 60*time.Second)
 		if err != nil {
-			fmt.Println(err.Error())
+			return err
 		}
 
 		err = RemoveContainer(k)
 		if err != nil {
-			fmt.Println(err.Error())
+			return err
 		}
 		delete(d.Running, k)
 
-		d.save(db)
-
+		if err := d.save(db); err != nil {
+			return err
+		}
 	}
 
 	if len(d.Running) == 0 {
-		fmt.Println("Removing Deployment")
 		err := d.delete(db)
 
 		if err != nil {
-			fmt.Println(err.Error())
-			return
+
+			return err
 		}
-		fmt.Println("Deployment Removed")
 	}
+	return nil
 }

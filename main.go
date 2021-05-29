@@ -49,9 +49,7 @@ func main() {
 
 	r.POST("/stop", handleStopDeploy(db))
 
-	r.GET("/get", handleGet)
-
-	r.GET("/reset", handleReset(db))
+	r.GET("/get", handleGet(db))
 
 	r.GET("/status", handleStatus)
 

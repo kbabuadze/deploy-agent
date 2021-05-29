@@ -1,15 +1,29 @@
 package main
 
 import (
-	"fmt"
-	"log"
 	"net/http"
+	"os"
+	"time"
 
 	bolt "go.etcd.io/bbolt"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/gin-gonic/gin"
 )
+
+func errorAndExit(c *gin.Context, err string, status int, message string) {
+	os.Stderr.WriteString("[Deploy Agent Error] " + time.Now().String() + " " + err + " \n")
+	c.JSON(status, gin.H{
+		message: message,
+	})
+}
+
+func successAndExit(c *gin.Context, status int, message string) {
+	os.Stdout.WriteString("[Deploy Agent Success] " + time.Now().String() + " " + message)
+	c.JSON(status, gin.H{
+		message: message,
+	})
+}
 
 // Recieves create signal, Unmarshals JSON, passes action to goroutine and immediately returns a result.
 // Progress can be obtained though /status endpoint
@@ -21,13 +35,14 @@ func handleCreate(db *bolt.DB) gin.HandlerFunc {
 		var deployment = Deployment{}
 
 		if err := c.BindJSON(&containerConfig); err != nil {
-			panic(err)
+			errorAndExit(c, err.Error(), http.StatusInternalServerError, "error decoding config please check logs")
+			return
 		}
 
 		deployment.get(db, containerConfig.Name)
 
 		if deployment.Name != "" {
-			fmt.Println("deployment already exists")
+			errorAndExit(c, "deployment not found", http.StatusNotFound, "deployment Not Found")
 			return
 		}
 
@@ -37,11 +52,16 @@ func handleCreate(db *bolt.DB) gin.HandlerFunc {
 			Running: make(map[string]container.ContainerCreateCreatedBody),
 		}
 
-		deployment.save(db)
+		if err := deployment.save(db); err != nil {
+			errorAndExit(c, err.Error(), http.StatusInternalServerError, "error saving deploy please check logs")
+			return
+		}
 
-		deployment.run(db)
+		if err := deployment.run(db); err != nil {
+			errorAndExit(c, err.Error(), http.StatusInternalServerError, "failed to run deployment")
+		}
 
-		c.JSON(http.StatusOK, containerConfig)
+		successAndExit(c, http.StatusCreated, "deployment"+deployment.Name+"successfuly created")
 	}
 }
 
@@ -53,7 +73,8 @@ func handleStopDeploy(db *bolt.DB) gin.HandlerFunc {
 		}{}
 
 		if err := c.BindJSON(&stopReq); err != nil {
-			panic(err)
+			errorAndExit(c, err.Error(), http.StatusInternalServerError, "error decoding config please check logs")
+			return
 		}
 
 		deployment := Deployment{}
@@ -62,28 +83,16 @@ func handleStopDeploy(db *bolt.DB) gin.HandlerFunc {
 
 		if deployment.Name == "" {
 			c.JSON(http.StatusNotFound, stopReq.Name)
-			fmt.Printf("No such deployment")
+			errorAndExit(c, "deployment not found", http.StatusNotFound, "deployment not found")
 			return
 		}
 
-		deployment.stop(db)
+		if err := deployment.stop(db); err != nil {
+			errorAndExit(c, err.Error(), http.StatusInternalServerError, "error stopping deployment")
+			return
+		}
 
-		c.JSON(http.StatusOK, deployment)
-	}
-}
-
-func handleReset(db *bolt.DB) gin.HandlerFunc {
-	return func(c *gin.Context) {
-
-		db.Update(func(t *bolt.Tx) error {
-			b := t.Bucket([]byte("Deployemnets"))
-			b.Delete([]byte("nginx"))
-			return nil
-		})
-
-		c.JSON(http.StatusOK, gin.H{
-			"status": "reset",
-		})
+		successAndExit(c, http.StatusOK, "deployment successfully stopped")
 	}
 }
 
@@ -96,54 +105,59 @@ func handleUpdate(db *bolt.DB) gin.HandlerFunc {
 		}{}
 
 		if err := c.BindJSON(&updateParams); err != nil {
-			if err != nil {
-				log.Println(err.Error())
-				return
-			}
-
+			errorAndExit(c, err.Error(), http.StatusInternalServerError, "error decoding config please check logs")
+			return
 		}
 
 		deployment := Deployment{}
 
-		deployment.get(db, updateParams.Name)
+		if err := deployment.get(db, updateParams.Name); err != nil {
+			errorAndExit(c, err.Error(), http.StatusInternalServerError, "error getting deployment")
+			return
+		}
 
 		if deployment.Name == "" {
-			fmt.Println("Could not find Deployment")
+			errorAndExit(c, "deployment not found", http.StatusNotFound, "deployment not found")
+			return
 		}
 
 		err := deployment.update(updateParams.Image, db)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"status": "Failed to update, please check logs",
-			})
+			errorAndExit(c, err.Error(), http.StatusInternalServerError, "update failed, please check the logs")
 			return
 		}
 
 	}
 }
 
-func handleGet(c *gin.Context) {
+func handleGet(db *bolt.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		name := c.Param("name")
 
-	result := []gin.H{}
-	containers, err := GetContainers()
-	if err != nil {
-		log.Println(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status": "error retrieving containers",
-		})
+		deployment := Deployment{}
+
+		deployment.get(db, name)
+
+		result := []gin.H{}
+		containers, err := GetContainers()
+		if err != nil {
+			errorAndExit(c, err.Error(), http.StatusInternalServerError, "error retrieving containers")
+			return
+		}
+
+		for _, container := range containers {
+			result = append(result, gin.H{
+				"id":     container.ID,
+				"image":  container.Image,
+				"name":   container.Names,
+				"status": container.Status,
+				"ports":  container.Ports,
+			})
+		}
+
+		c.JSON(http.StatusOK, result)
 	}
 
-	for _, container := range containers {
-		result = append(result, gin.H{
-			"id":     container.ID,
-			"image":  container.Image,
-			"name":   container.Names,
-			"status": container.Status,
-			"ports":  container.Ports,
-		})
-	}
-
-	c.JSON(http.StatusOK, result)
 }
 
 func handleStatus(c *gin.Context) {
@@ -158,10 +172,8 @@ func handleStatus(c *gin.Context) {
 
 	containers, err := GetContainers()
 	if err != nil {
-		log.Println(err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"status": "error retrieving containers",
-		})
+		errorAndExit(c, err.Error(), http.StatusInternalServerError, "error retrieving containers")
+		return
 	}
 
 	for _, container := range containers {
