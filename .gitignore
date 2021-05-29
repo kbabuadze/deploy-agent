@@ -1,3 +1,5 @@
 config.yaml
 my.db
 .env
+deploy-agent
+deploy-agent.log
