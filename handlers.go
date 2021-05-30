@@ -14,14 +14,14 @@ import (
 func errorAndExit(c *gin.Context, err string, status int, message string) {
 	os.Stderr.WriteString("[Deploy Agent Error] " + time.Now().String() + " " + err + " \n")
 	c.JSON(status, gin.H{
-		message: message,
+		"message": message,
 	})
 }
 
 func successAndExit(c *gin.Context, status int, message string) {
 	os.Stdout.WriteString("[Deploy Agent Success] " + time.Now().String() + " " + message)
 	c.JSON(status, gin.H{
-		message: message,
+		"message": message,
 	})
 }
 
@@ -34,8 +34,8 @@ func handleCreate(db *bolt.DB) gin.HandlerFunc {
 		var containerConfig ContainerConfig
 		var deployment = Deployment{}
 
-		if err := c.BindJSON(&containerConfig); err != nil {
-			errorAndExit(c, err.Error(), http.StatusInternalServerError, "error decoding config please check logs")
+		if err := c.ShouldBindJSON(&containerConfig); err != nil {
+			errorAndExit(c, err.Error(), http.StatusInternalServerError, "error decoding config, please check logs")
 			return
 		}
 
@@ -53,12 +53,12 @@ func handleCreate(db *bolt.DB) gin.HandlerFunc {
 		}
 
 		if err := deployment.save(db); err != nil {
-			errorAndExit(c, err.Error(), http.StatusInternalServerError, "error saving deploy please check logs")
+			errorAndExit(c, err.Error(), http.StatusInternalServerError, "error saving deploy, please check logs")
 			return
 		}
 
 		if err := deployment.run(db); err != nil {
-			errorAndExit(c, err.Error(), http.StatusInternalServerError, "failed to run deployment")
+			errorAndExit(c, err.Error(), http.StatusInternalServerError, "failed to run deployment, please check logs")
 		}
 
 		successAndExit(c, http.StatusCreated, "deployment"+deployment.Name+"successfuly created")
@@ -72,8 +72,8 @@ func handleStopDeploy(db *bolt.DB) gin.HandlerFunc {
 			Name string `json:"name"`
 		}{}
 
-		if err := c.BindJSON(&stopReq); err != nil {
-			errorAndExit(c, err.Error(), http.StatusInternalServerError, "error decoding config please check logs")
+		if err := c.ShouldBindJSON(&stopReq); err != nil {
+			errorAndExit(c, err.Error(), http.StatusInternalServerError, "error decoding config, please check logs")
 			return
 		}
 
@@ -88,7 +88,7 @@ func handleStopDeploy(db *bolt.DB) gin.HandlerFunc {
 		}
 
 		if err := deployment.stop(db); err != nil {
-			errorAndExit(c, err.Error(), http.StatusInternalServerError, "error stopping deployment")
+			errorAndExit(c, err.Error(), http.StatusInternalServerError, "error stopping deployment, please check logs")
 			return
 		}
 
@@ -104,15 +104,15 @@ func handleUpdate(db *bolt.DB) gin.HandlerFunc {
 			Image string `json:"image"`
 		}{}
 
-		if err := c.BindJSON(&updateParams); err != nil {
-			errorAndExit(c, err.Error(), http.StatusInternalServerError, "error decoding config please check logs")
+		if err := c.ShouldBindJSON(&updateParams); err != nil {
+			errorAndExit(c, err.Error(), http.StatusInternalServerError, "error decoding config, please check logs")
 			return
 		}
 
 		deployment := Deployment{}
 
 		if err := deployment.get(db, updateParams.Name); err != nil {
-			errorAndExit(c, err.Error(), http.StatusInternalServerError, "error getting deployment")
+			errorAndExit(c, err.Error(), http.StatusInternalServerError, "error getting deployment, please check logs")
 			return
 		}
 
@@ -141,7 +141,7 @@ func handleGet(db *bolt.DB) gin.HandlerFunc {
 		result := []gin.H{}
 		containers, err := GetContainers()
 		if err != nil {
-			errorAndExit(c, err.Error(), http.StatusInternalServerError, "error retrieving containers")
+			errorAndExit(c, err.Error(), http.StatusInternalServerError, "error retrieving containers, please check logs")
 			return
 		}
 
@@ -172,7 +172,7 @@ func handleStatus(c *gin.Context) {
 
 	containers, err := GetContainers()
 	if err != nil {
-		errorAndExit(c, err.Error(), http.StatusInternalServerError, "error retrieving containers")
+		errorAndExit(c, err.Error(), http.StatusInternalServerError, "error retrieving containers, please check logs")
 		return
 	}
 
