@@ -53,7 +53,7 @@ func main() {
 
 	r.GET("/status", handleStatus)
 
-	r.POST("/update", handleUpdate(db))
+	r.PATCH("/update", handleUpdate(db))
 
 	// Start server
 	r.Run(listen_on)
