@@ -2,11 +2,11 @@
 
 > **Disclaimer**: This project is ***NOT*** intended for a production evironment. Use at your own risk. 
 
-Depoy agent can be run on a remote machine to pull and run containers. 
+Depoy agent can run on a remote machine to pull and run containers. 
 
 ### Prerequisites
 
-You need to have latest versions of [GO](https://golang.org/doc/install) and [Docker](https://docs.docker.com/engine/install/)
+You need to have the latest versions of [Go](https://golang.org/doc/install) and [Docker](https://docs.docker.com/engine/install/)
 
 ### Installation
 
@@ -15,7 +15,7 @@ Build an executable:
 go build . 
 
 ```
-Specify IP and PORT in .env  using the same format as in .env.example 
+Specify IP and PORT in .env  using the same format as in the .env.example 
 or:
 ```bash
 cp .env.example .env
@@ -24,9 +24,12 @@ Run an agent:
 ```bash
 ./deploy-agent
 ```
-### Requests
+### Usage:
 
-Create a deploymnet from a JSON object: 
+
+
+#### Create a deployment from a JSON object: 
+`POST /create` 
 ```curl
 
 curl localhost:8008/create -d '{
@@ -41,7 +44,7 @@ curl localhost:8008/create -d '{
     "portFirst": 8090,
     "proto": "tcp"
   },
-  "replicas": 3,
+  "replicas": 2,
   "command": [
     "nginx",
     "-g",
@@ -50,3 +53,19 @@ curl localhost:8008/create -d '{
 }'
 
 ```
+#### Update deployment image:
+ `POST /update`
+```curl
+curl localhost:8008/update -d '{"name":"nginx","image":"image":"nginx:1.21.0"}'
+```
+
+#### Stop deployment:
+`POST /stop`
+```curl
+ curl localhost:8008/stop -d '{"name":"nginx"}'
+ ```
+#### Get containers:
+`GET /get`
+````curl
+ curl localhost:8008/get
+````
