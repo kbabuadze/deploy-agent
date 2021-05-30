@@ -65,6 +65,8 @@ func handleCreate(db *bolt.DB) gin.HandlerFunc {
 	}
 }
 
+// Stop and remove containers
+// Remove deployment from the db
 func handleStopDeploy(db *bolt.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
@@ -96,6 +98,7 @@ func handleStopDeploy(db *bolt.DB) gin.HandlerFunc {
 	}
 }
 
+// Update containers' image
 func handleUpdate(db *bolt.DB) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
