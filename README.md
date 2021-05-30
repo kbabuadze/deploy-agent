@@ -54,9 +54,9 @@ curl localhost:8008/create -d '{
 
 ```
 #### Update deployment image:
- `POST /update`
+ `PATCH /update`
 ```curl
-curl localhost:8008/update -d '{"name":"nginx","image":"image":"nginx:1.21.0"}'
+curl -XPATCH localhost:8008/update -d '{"name":"nginx","image":"image":"nginx:1.21.0"}'
 ```
 
 #### Stop deployment:
