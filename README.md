@@ -64,7 +64,7 @@ curl localhost:8008/update -d '{"name":"nginx","image":"image":"nginx:1.21.0"}'
 ```curl
  curl localhost:8008/stop -d '{"name":"nginx"}'
  ```
-#### Get containers:
+#### Get running containers:
 `GET /get`
 ````curl
  curl localhost:8008/get
