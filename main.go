@@ -24,6 +24,9 @@ func main() {
 
 	listen_on := os.Getenv("LISTEN_ON")
 
+	username := os.Getenv("DEPLOY_USERNAME")
+	password := os.Getenv("DEPLOY_PASSWORD")
+
 	// Initialize gin
 	r := gin.Default()
 
@@ -44,16 +47,21 @@ func main() {
 		return nil
 	})
 
+	// Setup basic auth
+	authorized := r.Group("/", gin.BasicAuth(gin.Accounts{
+		username: password,
+	}))
+
 	// Setup Routes
-	r.POST("/create", handleCreate(db))
+	authorized.POST("/create", handleCreate(db))
 
-	r.POST("/stop", handleStopDeploy(db))
+	authorized.POST("/stop", handleStopDeploy(db))
 
-	r.GET("/get", handleGet(db))
+	authorized.GET("/get", handleGet(db))
 
-	r.GET("/status", handleStatus)
+	authorized.GET("/status", handleStatus)
 
-	r.PATCH("/update", handleUpdate(db))
+	authorized.PATCH("/update", handleUpdate(db))
 
 	// Start server
 	r.Run(listen_on)
