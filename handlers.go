@@ -59,6 +59,7 @@ func handleCreate(db *bolt.DB) gin.HandlerFunc {
 
 		if err := deployment.run(db); err != nil {
 			errorAndExit(c, err.Error(), http.StatusInternalServerError, "failed to run deployment, please check logs")
+			return
 		}
 
 		successAndExit(c, http.StatusCreated, "deployment"+deployment.Name+"successfuly created")

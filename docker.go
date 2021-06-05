@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -35,8 +37,15 @@ func DeployContainer(props ContainerProps) (container.ContainerCreateCreatedBody
 		return containerBody, err
 	}
 
+	authBytes, _ := json.Marshal(map[string]string{
+		"username": os.Getenv("DOCKER_USERNAME"),
+		"password": os.Getenv("DOCKER_TOKEN"),
+	})
+
 	// Pull Container Image
-	reader, err := cli.ImagePull(ctx, props.Image, types.ImagePullOptions{})
+	reader, err := cli.ImagePull(ctx, props.Image, types.ImagePullOptions{
+		RegistryAuth: base64.StdEncoding.EncodeToString(authBytes),
+	})
 	if err != nil {
 		return containerBody, err
 	}
