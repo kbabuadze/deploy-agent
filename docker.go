@@ -50,6 +50,7 @@ func DeployContainer(props ContainerProps) (container.ContainerCreateCreatedBody
 		return containerBody, err
 	}
 	io.Copy(os.Stdout, reader)
+	fmt.Println("")
 
 	// Host config
 	hostConfig := &container.HostConfig{

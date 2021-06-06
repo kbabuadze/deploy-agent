@@ -19,7 +19,7 @@ func errorAndExit(c *gin.Context, err string, status int, message string) {
 }
 
 func successAndExit(c *gin.Context, status int, message string) {
-	os.Stdout.WriteString("[Deploy Agent Success] " + time.Now().String() + " " + message)
+	os.Stdout.WriteString("[Deploy Agent Success] " + time.Now().String() + " " + message + " \n")
 	c.JSON(status, gin.H{
 		"message": message,
 	})
@@ -42,7 +42,7 @@ func handleCreate(db *bolt.DB) gin.HandlerFunc {
 		deployment.get(db, containerConfig.Name)
 
 		if deployment.Name != "" {
-			errorAndExit(c, "deployment not found", http.StatusNotFound, "deployment Not Found")
+			errorAndExit(c, "deployment already exists", http.StatusNotFound, "deployment already exists, please run stop if you don't see running containers")
 			return
 		}
 
@@ -62,7 +62,7 @@ func handleCreate(db *bolt.DB) gin.HandlerFunc {
 			return
 		}
 
-		successAndExit(c, http.StatusCreated, "deployment"+deployment.Name+"successfuly created")
+		successAndExit(c, http.StatusCreated, "deployment "+deployment.Name+" successfuly created")
 	}
 }
 
