@@ -50,22 +50,22 @@ curl localhost:8008/create -d '{
     "-g",
     "daemon off;"
   ]
-}'
+}' -u admin:admin
 
 ```
 #### Update deployment image:
  `PATCH /update`
 ```curl
-curl -XPATCH localhost:8008/update -d '{"name":"nginx","image":"image":"nginx:1.21.0"}'
+curl -XPATCH localhost:8008/update -d '{"name":"nginx","image":"image":"nginx:1.21.0"}' -u admin:admin
 ```
 
 #### Stop deployment:
 `POST /stop`
 ```curl
- curl localhost:8008/stop -d '{"name":"nginx"}'
+ curl localhost:8008/stop -d '{"name":"nginx"}' -u admin:admin
  ```
 #### Get running containers:
 `GET /get`
 ````curl
- curl localhost:8008/get
+ curl localhost:8008/get -u admin:admin
 ````
