@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -54,9 +55,11 @@ func main() {
 		username: password,
 	}))
 
-	deoloymentRepo := domain.NewDeploymentsRepositoryDB(db)
+	deploymentRepo := domain.NewDeploymentsRepositoryDB(db)
+	ctx := context.Background()
+	deploymentRuntime := domain.NewDeploymentsRuntime(&ctx)
 
-	deploymentHandler := DeploymentHandler{svcs.NewDploymentService(&deoloymentRepo)}
+	deploymentHandler := DeploymentHandler{svcs.NewDeploymentService(&deploymentRepo, &deploymentRuntime)}
 
 	// Setup Routes
 	authorized.POST("/create", handleCreate(db))
@@ -69,7 +72,8 @@ func main() {
 
 	authorized.PATCH("/update", handleUpdate(db))
 
-	authorized.GET("/abstractGet/:name", deploymentHandler.GetDeployments)
+	authorized.GET("/abstractGet/:name", deploymentHandler.GetDeployment)
+	authorized.POST("/abstractCreate", deploymentHandler.CreateDeployment)
 
 	// Start server
 	r.Run(listen_on)
