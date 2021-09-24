@@ -16,7 +16,3 @@ require (
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba // indirect
 	google.golang.org/grpc v1.37.1 // indirect
 )
-
-
-replace github.com/kbabuadze/deploy-agent/svcs => /home/ubuntu/for-fun/deploy-agent/svcs
-replace github.com/kbabuadze/deploy-agent/domain => /home/ubuntu/for-fun/deploy-agent/domain
