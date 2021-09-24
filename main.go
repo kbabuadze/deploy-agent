@@ -9,6 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/kbabuadze/deploy-agent/domain"
+	"github.com/kbabuadze/deploy-agent/svcs"
 )
 
 // var containers = map[string]container.ContainerCreateCreatedBody{}
@@ -52,6 +54,10 @@ func main() {
 		username: password,
 	}))
 
+	deoloymentRepo := domain.NewDeploymentsRepositoryDB(db)
+
+	deploymentHandler := DeploymentHandler{svcs.NewDploymentService(&deoloymentRepo)}
+
 	// Setup Routes
 	authorized.POST("/create", handleCreate(db))
 
@@ -62,6 +68,8 @@ func main() {
 	authorized.GET("/status", handleStatus)
 
 	authorized.PATCH("/update", handleUpdate(db))
+
+	authorized.GET("/abstractGet/:name", deploymentHandler.GetDeployments)
 
 	// Start server
 	r.Run(listen_on)
