@@ -7,6 +7,16 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
+type ContainerProps struct {
+	Image    string
+	Port     string   // Container Port
+	Name     string   // Container Basename
+	HostIP   string   // IP to bind port on
+	HostPort string   // Host Port
+	Command  []string // Command that runs on container start
+	Label    map[string]string
+}
+
 type ContainerConfig struct {
 	Image string `json:"image"`
 	Name  string `json:"name"`

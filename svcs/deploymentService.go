@@ -1,11 +1,13 @@
 package svcs
 
 import (
+	"github.com/docker/docker/api/types/container"
 	"github.com/kbabuadze/deploy-agent/domain"
 )
 
 type DeploymentService struct {
-	repo *domain.DeploymentsRepositoryDB
+	repo    *domain.DeploymentsRepositoryDB
+	runtime *domain.DeploymentsRuntimeDocker
 }
 
 func (ds *DeploymentService) Save(d domain.Deployment) error {
@@ -20,6 +22,14 @@ func (ds *DeploymentService) Get(name string) (*domain.Deployment, error) {
 	return deployment, nil
 }
 
-func NewDploymentService(repo *domain.DeploymentsRepositoryDB) DeploymentService {
-	return DeploymentService{repo: repo}
+func (ds *DeploymentService) Run(d domain.Deployment) error {
+	return ds.runtime.Run(&d)
+}
+
+func (ds *DeploymentService) RunContainer(c domain.ContainerProps) (container.ContainerCreateCreatedBody, error) {
+	return ds.runtime.RunContainer(c)
+}
+
+func NewDeploymentService(repo *domain.DeploymentsRepositoryDB, runtime *domain.DeploymentsRuntimeDocker) DeploymentService {
+	return DeploymentService{repo: repo, runtime: runtime}
 }
