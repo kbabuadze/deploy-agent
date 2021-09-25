@@ -18,33 +18,6 @@ type DeploymentsRuntimeDocker struct {
 	ctx *context.Context
 }
 
-// func (dr *DeploymentsRuntimeDocker) Run(d *Deployment) error {
-// 	for i := 0; i < d.Config.Replicas; i++ {
-
-// 		// prepare container config
-// 		containerProps := ContainerProps{
-// 			Image:    d.Config.Image,
-// 			Name:     d.Config.Name + "-" + strconv.Itoa(i+1),
-// 			Port:     d.Config.ContainerNet.Port + "/" + d.Config.ContainerNet.Proto,
-// 			HostIP:   d.Config.HostNet.IP,
-// 			HostPort: strconv.Itoa(d.Config.HostNet.PortFirst+i) + "/" + d.Config.HostNet.Proto,
-// 			Command:  d.Config.Command,
-// 			Label:    map[string]string{"by": "deploy-agent"},
-// 		}
-
-// 		containerCreateBody, err := dr.RunContainer(containerProps)
-
-// 		if err != nil {
-// 			return err
-// 		}
-
-// 		d.Running[containerCreateBody.ID] = containerCreateBody
-
-// 	}
-
-// 	return nil
-// }
-
 func (dr *DeploymentsRuntimeDocker) RunContainer(props ContainerProps) (container.ContainerCreateCreatedBody, error) {
 	containerBody := container.ContainerCreateCreatedBody{}
 
