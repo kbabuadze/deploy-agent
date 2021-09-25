@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/gin-gonic/gin"
@@ -80,5 +81,57 @@ func (dh *DeploymentHandler) CreateDeployment(c *gin.Context) {
 	}
 
 	successAndExit(c, http.StatusCreated, "deployment "+deployment.Name+" successfuly created")
+
+}
+
+func (dh *DeploymentHandler) StopDeployment(c *gin.Context) {
+	stopReq := struct {
+		Name string `json:"name"`
+	}{}
+
+	if err := c.ShouldBindJSON(&stopReq); err != nil {
+		errorAndExit(c, err.Error(), http.StatusInternalServerError, "error decoding config, please check logs")
+		return
+	}
+
+	deployment, err := dh.service.Get(stopReq.Name)
+
+	if err != nil {
+		errorAndExit(c, err.Error(), http.StatusNotFound, "Unexpected error")
+		return
+	}
+
+	if deployment.Name == "" {
+		c.JSON(http.StatusNotFound, stopReq.Name)
+		errorAndExit(c, "deployment not found", http.StatusNotFound, "deployment not found")
+		return
+	}
+
+	for k := range deployment.Running {
+		err := dh.service.StopContainer(k, 60*time.Second)
+		if err != nil {
+			errorAndExit(c, err.Error(), http.StatusNotFound, "Unexpected error")
+			return
+		}
+
+		err = RemoveContainer(k)
+		if err != nil {
+			errorAndExit(c, err.Error(), http.StatusNotFound, "Unexpected error")
+			return
+		}
+		delete(deployment.Running, k)
+
+		if err := dh.service.Save(*deployment); err != nil {
+			errorAndExit(c, err.Error(), http.StatusNotFound, "Unexpected error")
+			return
+		}
+	}
+
+	if err := dh.service.Delete(deployment.Name); err != nil {
+		errorAndExit(c, err.Error(), http.StatusNotFound, "Unexpected error")
+		return
+	}
+
+	successAndExit(c, http.StatusOK, "deployment successfully stopped")
 
 }
