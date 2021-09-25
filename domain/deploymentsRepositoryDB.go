@@ -59,6 +59,17 @@ func (dr *DeploymentsRepositoryDB) Get(name string) (*Deployment, error) {
 	return &deployment, err
 }
 
+func (dr *DeploymentsRepositoryDB) Delete(name string) error {
+
+	return dr.client.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte("Deployments"))
+		if err := b.Delete([]byte(name)); err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
 func NewDeploymentsRepositoryDB(client *bolt.DB) DeploymentsRepositoryDB {
 	return DeploymentsRepositoryDB{client: client}
 }

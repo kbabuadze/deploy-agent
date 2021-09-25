@@ -74,6 +74,7 @@ func main() {
 
 	authorized.GET("/abstractGet/:name", deploymentHandler.GetDeployment)
 	authorized.POST("/abstractCreate", deploymentHandler.CreateDeployment)
+	authorized.POST("/abstractStop", deploymentHandler.StopDeployment)
 
 	// Start server
 	r.Run(listen_on)

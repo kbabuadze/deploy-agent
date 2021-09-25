@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -72,6 +73,20 @@ func (dr *DeploymentsRuntimeDocker) RunContainer(props ContainerProps) (containe
 	}
 
 	return resp, err
+}
+
+func (dr *DeploymentsRuntimeDocker) Stop(id string, timeout time.Duration) error {
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+
+	if err := cli.ContainerStop(*dr.ctx, id, &timeout); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func NewDeploymentsRuntime(ctx *context.Context) DeploymentsRuntimeDocker {
