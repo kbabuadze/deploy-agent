@@ -22,9 +22,9 @@ func (ds *DeploymentService) Get(name string) (*domain.Deployment, error) {
 	return deployment, nil
 }
 
-func (ds *DeploymentService) Run(d domain.Deployment) error {
-	return ds.runtime.Run(&d)
-}
+// func (ds *DeploymentService) Run(d domain.Deployment) error {
+// 	return ds.runtime.Run(&d)
+// }
 
 func (ds *DeploymentService) RunContainer(c domain.ContainerProps) (container.ContainerCreateCreatedBody, error) {
 	return ds.runtime.RunContainer(c)

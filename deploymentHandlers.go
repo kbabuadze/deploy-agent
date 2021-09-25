@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/gin-gonic/gin"
@@ -41,11 +42,6 @@ func (dh *DeploymentHandler) CreateDeployment(c *gin.Context) {
 
 	_, err := dh.service.Get(containerConfig.Name)
 
-	if err.Error() != "not_found" {
-		errorAndExit(c, "deployment already exists", http.StatusNotFound, "deployment already exists, please run stop if you don't see running containers")
-		return
-	}
-
 	if err != nil && err.Error() != "not_found" {
 		errorAndExit(c, err.Error(), http.StatusNotFound, "Unexpected error")
 		return
@@ -57,13 +53,29 @@ func (dh *DeploymentHandler) CreateDeployment(c *gin.Context) {
 		Running: make(map[string]container.ContainerCreateCreatedBody),
 	}
 
-	if err := dh.service.Save(*deployment); err != nil {
-		errorAndExit(c, err.Error(), http.StatusInternalServerError, "error saving deploy, please check logs")
-		return
+	for i := 0; i < deployment.Config.Replicas; i++ {
+
+		// prepare container config
+		containerProps := domain.ContainerProps{
+			Image:    deployment.Config.Image,
+			Name:     deployment.Config.Name + "-" + strconv.Itoa(i+1),
+			Port:     deployment.Config.ContainerNet.Port + "/" + deployment.Config.ContainerNet.Proto,
+			HostIP:   deployment.Config.HostNet.IP,
+			HostPort: strconv.Itoa(deployment.Config.HostNet.PortFirst+i) + "/" + deployment.Config.HostNet.Proto,
+			Command:  deployment.Config.Command,
+			Label:    map[string]string{"by": "deploy-agent"},
+		}
+		containerCreateBody, err := dh.service.RunContainer(containerProps)
+		if err != nil {
+			errorAndExit(c, err.Error(), http.StatusInternalServerError, "error saving deploy, please check logs")
+			return
+		}
+
+		deployment.Running[containerCreateBody.ID] = containerCreateBody
 	}
 
-	if err := dh.service.Run(*deployment); err != nil {
-		errorAndExit(c, err.Error(), http.StatusInternalServerError, "failed to run deployment, please check logs")
+	if err := dh.service.Save(*deployment); err != nil {
+		errorAndExit(c, err.Error(), http.StatusInternalServerError, "error saving deploy, please check logs")
 		return
 	}
 
