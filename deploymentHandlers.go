@@ -1,10 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/gin-gonic/gin"
 	"github.com/kbabuadze/deploy-agent/domain"
@@ -15,6 +18,21 @@ type DeploymentHandler struct {
 	service svcs.DeploymentService
 }
 
+func errorAndExit(c *gin.Context, err string, status int, message string) {
+	os.Stderr.WriteString("[Deploy Agent Error] " + time.Now().String() + " " + err + " \n")
+	c.JSON(status, gin.H{
+		"message": message,
+	})
+}
+
+func successAndExit(c *gin.Context, status int, message string) {
+	os.Stdout.WriteString("[Deploy Agent Success] " + time.Now().String() + " " + message + " \n")
+	c.JSON(status, gin.H{
+		"message": message,
+	})
+}
+
+// Get Deployment
 func (dh *DeploymentHandler) GetDeployment(c *gin.Context) {
 	name := c.Param("name")
 	deployment, err := dh.service.Get(name)
@@ -31,6 +49,7 @@ func (dh *DeploymentHandler) GetDeployment(c *gin.Context) {
 	c.JSON(http.StatusOK, *deployment)
 }
 
+// Create Deployment
 func (dh *DeploymentHandler) CreateDeployment(c *gin.Context) {
 
 	var containerConfig domain.ContainerConfig
@@ -88,6 +107,7 @@ func (dh *DeploymentHandler) CreateDeployment(c *gin.Context) {
 
 }
 
+// Stop Deployment
 func (dh *DeploymentHandler) StopDeployment(c *gin.Context) {
 	stopReq := struct {
 		Name string `json:"name"`
@@ -118,7 +138,7 @@ func (dh *DeploymentHandler) StopDeployment(c *gin.Context) {
 			return
 		}
 
-		err = RemoveContainer(k)
+		err = dh.service.DeleteContainer(k)
 		if err != nil {
 			errorAndExit(c, err.Error(), http.StatusNotFound, "Unexpected error")
 			return
@@ -137,5 +157,78 @@ func (dh *DeploymentHandler) StopDeployment(c *gin.Context) {
 	}
 
 	successAndExit(c, http.StatusOK, "deployment successfully stopped")
+}
+
+func (dh *DeploymentHandler) UpdateDeployment(c *gin.Context) {
+	updateParams := struct {
+		Name  string `json:"name"`
+		Image string `json:"image"`
+	}{}
+
+	if err := c.ShouldBindJSON(&updateParams); err != nil {
+		errorAndExit(c, err.Error(), http.StatusInternalServerError, "error decoding config, please check logs")
+		return
+	}
+
+	deployment, err := dh.service.Get(updateParams.Name)
+	if err != nil {
+		errorAndExit(c, err.Error(), http.StatusInternalServerError, "error getting deployment, please check logs")
+		return
+	}
+
+	containers := make([]types.Container, 0)
+
+	for id := range deployment.Running {
+		if err != nil {
+			errorAndExit(c, err.Error(), http.StatusInternalServerError, "Unexpected error")
+		}
+		container, err := dh.service.GetContainer(id)
+
+		if err != nil {
+			errorAndExit(c, err.Error(), http.StatusInternalServerError, "Unexpected error")
+		}
+
+		containers = append(containers, container)
+	}
+
+	for _, container := range containers {
+		err := dh.service.StopContainer(container.ID, 60*time.Second)
+
+		if err != nil {
+			errorAndExit(c, err.Error(), http.StatusInternalServerError, "Unexpected error")
+			return
+		}
+
+		err = dh.service.DeleteContainer(container.ID)
+
+		if err != nil {
+			errorAndExit(c, err.Error(), http.StatusInternalServerError, "Unexpected error")
+			return
+		}
+
+		containerProps := domain.ContainerProps{
+			Image:    updateParams.Image,
+			Name:     container.Names[0],
+			Port:     fmt.Sprint(container.Ports[0].PrivatePort) + "/" + deployment.Config.ContainerNet.Proto,
+			HostIP:   container.Ports[0].IP,
+			HostPort: strconv.Itoa(int(container.Ports[0].PublicPort)) + "/" + deployment.Config.HostNet.Proto,
+			Command:  deployment.Config.Command,
+			Label:    map[string]string{"by": "deploy-agent"},
+		}
+
+		createBody, err := dh.service.RunContainer(containerProps)
+
+		if err != nil {
+			errorAndExit(c, err.Error(), http.StatusInternalServerError, "Unexpected error")
+			return
+		}
+
+		delete(deployment.Running, container.ID)
+		deployment.Running[createBody.ID] = createBody
+
+		dh.service.Save(*deployment)
+	}
+
+	successAndExit(c, 200, deployment.Name)
 
 }

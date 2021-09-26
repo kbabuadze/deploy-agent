@@ -11,6 +11,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 )
@@ -19,6 +20,7 @@ type DeploymentsRuntimeDocker struct {
 	ctx *context.Context
 }
 
+// Run Container
 func (dr *DeploymentsRuntimeDocker) RunContainer(props ContainerProps) (container.ContainerCreateCreatedBody, error) {
 	containerBody := container.ContainerCreateCreatedBody{}
 
@@ -75,6 +77,7 @@ func (dr *DeploymentsRuntimeDocker) RunContainer(props ContainerProps) (containe
 	return resp, err
 }
 
+// Stop Container
 func (dr *DeploymentsRuntimeDocker) Stop(id string, timeout time.Duration) error {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
@@ -83,6 +86,35 @@ func (dr *DeploymentsRuntimeDocker) Stop(id string, timeout time.Duration) error
 	}
 
 	if err := cli.ContainerStop(*dr.ctx, id, &timeout); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (dr *DeploymentsRuntimeDocker) GetContainer(id string) (types.Container, error) {
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		panic(err)
+	}
+
+	filter := filters.NewArgs()
+
+	filter.Add("id", id)
+
+	containers, err := cli.ContainerList(*dr.ctx, types.ContainerListOptions{Filters: filter})
+
+	return containers[0], err
+}
+
+// Delete Container
+func (dr *DeploymentsRuntimeDocker) DeleteContainer(id string) error {
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	if err != nil {
+		return err
+	}
+
+	if err := cli.ContainerRemove(*dr.ctx, id, types.ContainerRemoveOptions{}); err != nil {
 		return err
 	}
 
