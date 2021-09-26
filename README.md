@@ -32,7 +32,7 @@ Run an agent:
 `POST /create` 
 ```curl
 
-curl localhost:8008/create -d '{
+curl -XPOST http://localhost:8008/create -d '{
   "image": "nginx:latest",
   "name": "nginx",
   "containerNet": {
@@ -53,6 +53,13 @@ curl localhost:8008/create -d '{
 }' -u admin:admin
 
 ```
+
+#### Get running containers:
+`GET /get`
+````curl
+ curl -XGET http://localhost:8008/get/nginx -u admin:admin
+````
+
 #### Update deployment image:
  `PATCH /update`
 ```curl
@@ -62,10 +69,5 @@ curl -XPATCH localhost:8008/update -d '{"name":"nginx","image":"nginx:1.21.0"}' 
 #### Stop deployment:
 `POST /stop`
 ```curl
- curl localhost:8008/stop -d '{"name":"nginx"}' -u admin:admin
+ curl -XPOST http://localhost:8008/stop -d '{"name":"nginx"}' -u admin:admin
  ```
-#### Get running containers:
-`GET /get`
-````curl
- curl localhost:8008/get -u admin:admin
-````
