@@ -34,17 +34,21 @@ func (dh *DeploymentHandler) GetDeployment(c *gin.Context) {
 func (dh *DeploymentHandler) CreateDeployment(c *gin.Context) {
 
 	var containerConfig domain.ContainerConfig
-	var deployment *domain.Deployment
 
 	if err := c.ShouldBindJSON(&containerConfig); err != nil {
 		errorAndExit(c, err.Error(), http.StatusInternalServerError, "error decoding config, please check logs")
 		return
 	}
 
-	_, err := dh.service.Get(containerConfig.Name)
+	deployment, err := dh.service.Get(containerConfig.Name)
 
 	if err != nil && err.Error() != "not_found" {
-		errorAndExit(c, err.Error(), http.StatusNotFound, "Unexpected error")
+		errorAndExit(c, err.Error(), http.StatusInternalServerError, "Unexpected error")
+		return
+	}
+
+	if deployment != nil {
+		errorAndExit(c, "Deployment already exists", http.StatusConflict, "Deployment already exists")
 		return
 	}
 
