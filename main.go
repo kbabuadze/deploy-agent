@@ -62,19 +62,11 @@ func main() {
 	deploymentHandler := DeploymentHandler{svcs.NewDeploymentService(&deploymentRepo, &deploymentRuntime)}
 
 	// Setup Routes
-	authorized.POST("/create", handleCreate(db))
 
-	authorized.POST("/stop", handleStopDeploy(db))
-
-	authorized.GET("/get", handleGet(db))
-
-	authorized.GET("/status", handleStatus)
-
-	authorized.PATCH("/update", handleUpdate(db))
-
-	authorized.GET("/abstractGet/:name", deploymentHandler.GetDeployment)
-	authorized.POST("/abstractCreate", deploymentHandler.CreateDeployment)
-	authorized.POST("/abstractStop", deploymentHandler.StopDeployment)
+	authorized.GET("/get/:name", deploymentHandler.GetDeployment)
+	authorized.POST("/create", deploymentHandler.CreateDeployment)
+	authorized.POST("/stop", deploymentHandler.StopDeployment)
+	authorized.PATCH("/update", deploymentHandler.UpdateDeployment)
 
 	// Start server
 	r.Run(listen_on)

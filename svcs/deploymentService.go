@@ -3,6 +3,7 @@ package svcs
 import (
 	"time"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/kbabuadze/deploy-agent/domain"
 )
@@ -34,6 +35,14 @@ func (ds *DeploymentService) RunContainer(c domain.ContainerProps) (container.Co
 
 func (ds *DeploymentService) StopContainer(id string, timeout time.Duration) error {
 	return ds.runtime.Stop(id, timeout)
+}
+
+func (ds *DeploymentService) GetContainer(id string) (types.Container, error) {
+	return ds.runtime.GetContainer(id)
+}
+
+func (ds *DeploymentService) DeleteContainer(id string) error {
+	return ds.runtime.DeleteContainer(id)
 }
 
 func NewDeploymentService(repo *domain.DeploymentsRepositoryDB, runtime *domain.DeploymentsRuntimeDocker) DeploymentService {
