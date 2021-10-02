@@ -7,6 +7,8 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
+var ErrDeploymentNotFound = errors.New("error deployment not found")
+
 type DeploymentsRepositoryDB struct {
 	client *bolt.DB
 }
@@ -45,7 +47,7 @@ func (dr *DeploymentsRepositoryDB) Get(name string) (*Deployment, error) {
 		result := b.Get([]byte(name))
 
 		if len(result) == 0 {
-			return errors.New("not_found")
+			return ErrDeploymentNotFound
 		}
 
 		err := json.Unmarshal(result, &deployment)

@@ -38,7 +38,7 @@ func (dh *DeploymentHandler) GetDeployment(c *gin.Context) {
 	deployment, err := dh.service.Get(name)
 
 	if err != nil {
-		if err.Error() == "not_found" {
+		if err == domain.ErrDeploymentNotFound {
 			errorAndExit(c, err.Error(), 404, "Not found")
 			return
 		}
