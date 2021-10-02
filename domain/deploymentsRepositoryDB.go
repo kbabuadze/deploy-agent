@@ -7,6 +7,8 @@ import (
 	bolt "go.etcd.io/bbolt"
 )
 
+var ErrorDeploymentNotFound = errors.New("deployment not found")
+
 type DeploymentsRepositoryDB struct {
 	client *bolt.DB
 }
